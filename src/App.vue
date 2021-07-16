@@ -1,34 +1,42 @@
 <template>
-  <ul id="example-1">
-    <li v-for="item in messages" :key="item" v-bind:class="[item.user == username ? 'my-msg' : 'not-my-msg']">
+  <div>
+    <ul id="example-1">
+    <li v-for="item in messages" :key="item" v-bind:class="[className(item)]">
       <p class="msg-text">{{ item.msg }}</p>
       <b class="msg-user">{{ item.user}}</b>
       <p class="msg-time">{{ item.time}}</p>
     </li>
-  </ul>
-  <div class="buttons">
-    <input v-model="msg" v-on:keyup.enter="sendMessage">
-    <button @click="sendMessage">Send</button>
-  </div>
-  <div class="state">
-    <p class="users">{{ users }} online</p>
-  </div>
-  <teleport to="body">
-  <div v-if="modalOpen" class="modal">
-    <div>
-      <input type="text" v-model="username">
-      <button @click="setUsername">
-        Set username
-      </button>
+    </ul>
+    <div class="buttons">
+      <input v-model="msg" v-on:keyup.enter="sendMessage">
+      <button @click="sendMessage">Send</button>
     </div>
+    <div class="state">
+      <p class="users">{{ users }} online</p>
+    </div>
+    <teleport to="body">
+    <div v-if="modalOpen" class="modal">
+      <div>
+        <input type="text" v-model="username">
+        <button @click="setUsername">
+          Set username
+        </button>
+      </div>
+    </div>
+    </teleport>
   </div>
-</teleport>
+  <Game />
 </template>
 
 <script>
+import connection from "@/connection";
+import Game from "@/components/Game";
 
 export default {
   name: 'App',
+  components: {
+    Game,
+  },
   data() {
     return {
       connection: null,
@@ -54,11 +62,14 @@ export default {
         this.modalOpen = false;
       }
     },
+    className(item) {
+      if (item.user === this.username) return 'my-msg';
+      else if (item.user == 'SERVER') return 'msg-server';
+      return 'not-my-msg';
+    }
   },
   created() {
-    console.log("Starting connection to WebSocket Server")
-
-    this.connection = new WebSocket("ws://10.20.62.12:8765")
+    this.connection = connection;
     this.connection.onmessage = (event) => {
       let data = JSON.parse(event.data);
       switch (data.type) {
@@ -79,10 +90,6 @@ export default {
         // skroluj na dol czatu po odebraniu wiadomosci
         const chatBox = document.getElementById("example-1");
         setTimeout(() => {chatBox.scrollTop = chatBox.scrollHeight}, 200);
-    }
-    this.connection.onopen = (event) => {
-      console.log(event)
-      console.log("Successfully connected to the echo websocket server...")
     }
     this.modalOpen = localStorage.getItem('username') ? false : true;
     this.username = localStorage.getItem('username');
@@ -191,6 +198,14 @@ li.my-msg {
   background-color: #3b5998;
   color: #FFFFFF;
   border-radius: 12px 12px 0 12px;
+}
+
+li.msg-server {
+  margin-left: auto;
+  margin-right: auto;
+  color: #000;
+  width: 50%;
+  box-shadow: none;
 }
 
 p.msg-time {
